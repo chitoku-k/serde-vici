@@ -1,0 +1,47 @@
+[package]
+name = "serde_vici"
+version = "0.1.0"
+authors = ["Chitoku <odango@chitoku.jp>"]
+license = "MIT"
+description = "Serde serialization/deserialization library for the VICI protocol"
+repository = "https://github.com/chitoku-k/serde-vici"
+documentation = "https://docs.serde.rs/serde_vici/"
+keywords = ["vici", "serde"]
+readme = "README.md"
+edition = "2021"
+
+[dependencies.bytes]
+version = "1.1"
+
+[dependencies.itoa]
+version = "1.0"
+
+[dependencies.num_enum]
+version = "0.5"
+
+[dependencies.ryu]
+version = "1.0"
+
+[dependencies.serde]
+version = "1.0.117"
+features = ["std"]
+
+[dev-dependencies.anyhow]
+version = "1.0"
+
+[dev-dependencies.indexmap]
+version = "1.8"
+features = ["serde"]
+
+[dev-dependencies.pretty_assertions]
+version = "1.0"
+
+[dev-dependencies.serde]
+version = "1.0"
+features = ["derive", "std"]
+
+[dev-dependencies.serde_derive]
+version = "1.0"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]

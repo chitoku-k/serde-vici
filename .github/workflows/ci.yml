@@ -1,0 +1,62 @@
+name: CI Workflow
+on:
+  - push
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Set up rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Set up rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Set up rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Set up rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: doc

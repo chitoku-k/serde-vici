@@ -1,0 +1,23 @@
+name: CD Workflow
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Set up rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Publish
+        uses: actions-rs/cargo@v1
+        with:
+          command: publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

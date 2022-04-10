@@ -24,7 +24,6 @@ version = "1.0"
 
 [dependencies.serde]
 version = "1.0.117"
-features = ["std"]
 
 [dev-dependencies.anyhow]
 version = "1.0"
@@ -38,7 +37,7 @@ version = "1.0"
 
 [dev-dependencies.serde]
 version = "1.0"
-features = ["derive", "std"]
+features = ["derive"]
 
 [dev-dependencies.serde_derive]
 version = "1.0"

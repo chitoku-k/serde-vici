@@ -93,7 +93,7 @@ fn main() -> Result<(), serde_vici::Error> {
 ```
 
 [workflow-link]:    https://github.com/chitoku-k/serde-vici/actions?query=branch:master
-[workflow-badge]:   https://img.shields.io/github/workflow/status/chitoku-k/serde-vici/CI%20Workflow/master.svg?style=flat-square&logo=github
+[workflow-badge]:   https://img.shields.io/github/actions/workflow/status/chitoku-k/serde-vici/ci.yml?branch=master&style=flat-square&logo=github
 [docsrs-link]:      https://docs.rs/serde_vici/
 [docsrs-badge]:     https://img.shields.io/docsrs/serde_vici?style=flat-square
 [cratesio-link]:    https://crates.io/crates/serde_vici

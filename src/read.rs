@@ -193,7 +193,7 @@ impl<'a> Read<'a> for SliceRead<'a> {
                 self.pos += 1;
 
                 let key = self.as_str(s)?;
-                self.pos += size as usize;
+                self.pos += size;
 
                 return Ok(Reference::Borrowed(key));
             }
@@ -212,7 +212,7 @@ impl<'a> Read<'a> for SliceRead<'a> {
                 self.pos += 2;
 
                 let key = self.as_str(s)?;
-                self.pos += size as usize;
+                self.pos += size;
 
                 return Ok(Reference::Borrowed(key));
             }

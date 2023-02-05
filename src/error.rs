@@ -166,11 +166,11 @@ impl Display for ErrorImpl {
         Display::fmt(&self.code, f)?;
 
         if let Some(input) = self.input {
-            f.write_fmt(format_args!(" 0x{:x}", input))?;
+            f.write_fmt(format_args!(" 0x{input:x}"))?;
         }
 
         if let Some(pos) = self.pos {
-            f.write_fmt(format_args!(" at position {}", pos))?;
+            f.write_fmt(format_args!(" at position {pos}"))?;
         }
 
         Ok(())

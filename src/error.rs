@@ -48,7 +48,7 @@ impl Error {
     }
 
     /// Returns true if this error was caused by invalid data.
-    pub fn id_data(&self) -> bool {
+    pub fn is_data(&self) -> bool {
         self.classify() == Category::Data
     }
 

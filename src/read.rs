@@ -7,6 +7,8 @@ use crate::{
 
 pub trait Read<'de> {
     fn position(&self) -> usize;
+    fn peek_key(&mut self) -> Result<usize, Error>;
+    fn peek_value(&mut self) -> Result<usize, Error>;
     fn parse_key<'s>(&mut self, scratch: &'s mut Vec<u8>) -> Result<Reference<'de, 's, str>, Error>;
     fn parse_value<'s>(&mut self, scratch: &'s mut Vec<u8>) -> Result<Reference<'de, 's, str>, Error>;
     fn parse_element_type(&mut self) -> Result<ElementType, Error>;
@@ -43,6 +45,21 @@ pub struct IoRead<R> {
 pub struct SliceRead<'a> {
     slice: &'a [u8],
     pos: usize,
+}
+
+fn key_size(b: Option<&u8>) -> Option<usize> {
+    b.map(|&b| b as usize)
+}
+
+fn value_size(h: Option<&u8>, l: Option<&u8>) -> Option<usize> {
+    match (h, l) {
+        (Some(&h), Some(&l)) => {
+            let h = h as usize;
+            let l = l as usize;
+            Some((h << 8) + l)
+        },
+        _ => None,
+    }
 }
 
 impl<R> IoRead<R>
@@ -88,10 +105,31 @@ where
         self.pos
     }
 
+    fn peek_key(&mut self) -> Result<usize, Error> {
+        loop {
+            if let Some(size) = key_size(self.buf.get(0)) {
+                return Ok(size);
+            }
+
+            self.fill_buf()?
+                .ok_or_else(|| Error::data(ErrorCode::EofWhileParsingKey, None, Some(self.pos)))?;
+        }
+    }
+
+    fn peek_value<'s>(&mut self) -> Result<usize, Error> {
+        loop {
+            if let Some(size) = value_size(self.buf.get(0), self.buf.get(1)) {
+                return Ok(size);
+            }
+
+            self.fill_buf()?
+                .ok_or_else(|| Error::data(ErrorCode::EofWhileParsingValue, None, Some(self.pos)))?;
+        }
+    }
+
     fn parse_key<'s>(&mut self, scratch: &'s mut Vec<u8>) -> Result<Reference<'de, 's, str>, Error> {
         loop {
-            if let Some(&v) = self.buf.get(0) {
-                let size = v as usize;
+            if let Some(size) = key_size(self.buf.get(0)) {
                 if size < self.buf.len() {
                     self.buf.drain(..1);
                     self.pos += 1;
@@ -114,11 +152,7 @@ where
 
     fn parse_value<'s>(&mut self, scratch: &'s mut Vec<u8>) -> Result<Reference<'de, 's, str>, Error> {
         loop {
-            if let Some((&h, &l)) = self.buf.get(0).zip(self.buf.get(1)) {
-                let h = h as usize;
-                let l = l as usize;
-
-                let size = (h << 8) + l;
+            if let Some(size) = value_size(self.buf.get(0), self.buf.get(1)) {
                 if size < self.buf.len() - 1 {
                     self.buf.drain(..2);
                     self.pos += 2;
@@ -186,9 +220,24 @@ impl<'a> Read<'a> for SliceRead<'a> {
         self.pos
     }
 
+    fn peek_key(&mut self) -> Result<usize, Error> {
+        if let Some(size) = key_size(self.slice.get(self.pos)) {
+            return Ok(size);
+        }
+
+        Err(Error::data(ErrorCode::EofWhileParsingKey, None, Some(self.pos)))
+    }
+
+    fn peek_value(&mut self) -> Result<usize, Error> {
+        if let Some(size) = value_size(self.slice.get(self.pos), self.slice.get(self.pos + 1)) {
+            return Ok(size);
+        }
+
+        Err(Error::data(ErrorCode::EofWhileParsingValue, None, Some(self.pos)))
+    }
+
     fn parse_key<'s>(&mut self, _scratch: &'s mut Vec<u8>) -> Result<Reference<'a, 's, str>, Error> {
-        if let Some(&v) = self.slice.get(self.pos) {
-            let size = v as usize;
+        if let Some(size) = key_size(self.slice.get(self.pos)) {
             if let Some(s) = self.slice.get((self.pos + 1)..(self.pos + 1 + size)) {
                 self.pos += 1;
 
@@ -203,11 +252,7 @@ impl<'a> Read<'a> for SliceRead<'a> {
     }
 
     fn parse_value<'s>(&mut self, _scratch: &'s mut Vec<u8>) -> Result<Reference<'a, 's, str>, Error> {
-        if let Some((&h, &l)) = self.slice.get(self.pos).zip(self.slice.get(self.pos + 1)) {
-            let h = h as usize;
-            let l = l as usize;
-
-            let size = (h << 8) + l;
+        if let Some(size) = value_size(self.slice.get(self.pos), self.slice.get(self.pos + 1)) {
             if let Some(s) = self.slice.get((self.pos + 2)..(self.pos + 2 + size)) {
                 self.pos += 2;
 

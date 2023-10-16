@@ -181,6 +181,18 @@ where
 
     #[inline]
     fn serialize_none(self) -> Result<Self::Ok> {
+        match self.state {
+            State::None => {
+                return Err(io::Error::from(io::ErrorKind::InvalidData).into());
+            },
+            State::Key(_) | State::ListItem(_, None) => {
+                self.writer.write_all(&[0])?;
+            },
+            State::Value | State::ListItem(_, _) => {
+                self.writer.write_all(&[0, 0])?;
+            },
+        }
+
         Ok(())
     }
 
@@ -592,7 +604,7 @@ mod tests {
         #[derive(Serialize)]
         struct Lease {
             address: String,
-            identity: String,
+            identity: Option<String>,
             status: Status,
         }
 
@@ -613,22 +625,22 @@ mod tests {
                 leases: vec![
                     Lease {
                         address: "192.0.2.2".to_string(),
-                        identity: "identity-01".to_string(),
+                        identity: Some("identity-01".to_string()),
                         status: Status::Online,
                     },
                     Lease {
                         address: "192.0.2.3".to_string(),
-                        identity: "identity-02".to_string(),
+                        identity: Some("identity-02".to_string()),
                         status: Status::Online,
                     },
                     Lease {
                         address: "192.0.2.4".to_string(),
-                        identity: "identity-03".to_string(),
+                        identity: Some("identity-03".to_string()),
                         status: Status::Online,
                     },
                     Lease {
                         address: "192.0.2.5".to_string(),
-                        identity: "identity-04".to_string(),
+                        identity: None,
                         status: Status::Offline,
                     },
                 ],
@@ -687,8 +699,8 @@ mod tests {
                 1, 1, b'3',
                 // address = 192.0.2.5
                 3, 7, b'a', b'd', b'd', b'r', b'e', b's', b's', 0, 9, b'1', b'9', b'2', b'.', b'0', b'.', b'2', b'.', b'5',
-                // identity = identity-04
-                3, 8, b'i', b'd', b'e', b'n', b't', b'i', b't', b'y', 0, 11, b'i', b'd', b'e', b'n', b't', b'i', b't', b'y', b'-', b'0', b'4',
+                // identity =
+                3, 8, b'i', b'd', b'e', b'n', b't', b'i', b't', b'y', 0, 0,
                 // status = offline
                 3, 6, b's', b't', b'a', b't', b'u', b's', 0, 7, b'o', b'f', b'f', b'l', b'i', b'n', b'e',
                 // 3 end

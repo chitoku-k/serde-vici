@@ -263,6 +263,10 @@ where
     where
         V: de::Visitor<'de>,
     {
+        if self.state == State::None {
+            return visitor.visit_some(self);
+        }
+
         match self.peek()? {
             0 => {
                 self.parse_str()?;
@@ -498,7 +502,7 @@ mod tests {
         #[derive(Debug, Deserialize, Eq, PartialEq)]
         struct MainSection {
             #[serde(rename = "sub-section")]
-            sub_section: SubSection,
+            sub_section: Option<SubSection>,
             list1: Vec<String>,
         }
 
@@ -537,9 +541,60 @@ mod tests {
             RootSection {
                 key1: "value1".to_string(),
                 section1: MainSection {
-                    sub_section: SubSection {
+                    sub_section: Some(SubSection {
                         key2: "value2".to_string(),
-                    },
+                    }),
+                    list1: vec!["item1".to_string(), "item2".to_string()],
+                },
+            }
+        );
+    }
+
+    #[test]
+    fn deserialize_reader_none() {
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct RootSection {
+            key1: String,
+            section1: MainSection,
+        }
+
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct MainSection {
+            #[serde(rename = "sub-section")]
+            sub_section: Option<SubSection>,
+            list1: Vec<String>,
+        }
+
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct SubSection {
+            key2: String,
+        }
+
+        #[rustfmt::skip]
+        let data: &[_] = &[
+            // key1 = value1
+            3, 4, b'k', b'e', b'y', b'1', 0, 6, b'v', b'a', b'l', b'u', b'e', b'1',
+            // section1
+            1, 8, b's', b'e', b'c', b't', b'i', b'o', b'n', b'1',
+            // list1
+            4, 5, b'l', b'i', b's', b't', b'1',
+            // item1
+            5, 0, 5, b'i', b't', b'e', b'm', b'1',
+            // item2
+            5, 0, 5, b'i', b't', b'e', b'm', b'2',
+            // list1 end
+            6,
+            // section1 end
+            2,
+        ];
+
+        let actual: RootSection = from_reader(data).unwrap();
+        assert_eq!(
+            actual,
+            RootSection {
+                key1: "value1".to_string(),
+                section1: MainSection {
+                    sub_section: None,
                     list1: vec!["item1".to_string(), "item2".to_string()],
                 },
             }
@@ -679,7 +734,7 @@ mod tests {
         #[derive(Debug, Deserialize, Eq, PartialEq)]
         struct MainSection<'a> {
             #[serde(borrow, rename = "sub-section")]
-            sub_section: SubSection<'a>,
+            sub_section: Option<SubSection<'a>>,
             list1: Vec<&'a str>,
         }
 
@@ -718,7 +773,58 @@ mod tests {
             RootSection {
                 key1: "value1",
                 section1: MainSection {
-                    sub_section: SubSection { key2: "value2" },
+                    sub_section: Some(SubSection { key2: "value2" }),
+                    list1: vec!["item1", "item2",],
+                },
+            }
+        );
+    }
+
+    #[test]
+    fn deserialize_slice_none() {
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct RootSection<'a> {
+            key1: &'a str,
+            section1: MainSection<'a>,
+        }
+
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct MainSection<'a> {
+            #[serde(borrow, rename = "sub-section")]
+            sub_section: Option<SubSection<'a>>,
+            list1: Vec<&'a str>,
+        }
+
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct SubSection<'a> {
+            key2: &'a str,
+        }
+
+        #[rustfmt::skip]
+        let data = &[
+            // key1 = value1
+            3, 4, b'k', b'e', b'y', b'1', 0, 6, b'v', b'a', b'l', b'u', b'e', b'1',
+            // section1
+            1, 8, b's', b'e', b'c', b't', b'i', b'o', b'n', b'1',
+            // list1
+            4, 5, b'l', b'i', b's', b't', b'1',
+            // item1
+            5, 0, 5, b'i', b't', b'e', b'm', b'1',
+            // item2
+            5, 0, 5, b'i', b't', b'e', b'm', b'2',
+            // list1 end
+            6,
+            // section1 end
+            2,
+        ];
+
+        let actual: RootSection = from_slice(data).unwrap();
+        assert_eq!(
+            actual,
+            RootSection {
+                key1: "value1",
+                section1: MainSection {
+                    sub_section: None,
                     list1: vec!["item1", "item2",],
                 },
             }

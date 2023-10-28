@@ -112,12 +112,15 @@ impl<'a> ser::Serializer for &'a mut FieldTypeSerializer {
 
     #[inline]
     fn serialize_none(self) -> Result<Self::Ok> {
-        Ok(FieldType::String)
+        Ok(FieldType::None)
     }
 
     #[inline]
-    fn serialize_some<T: ?Sized>(self, _: &T) -> Result<Self::Ok> {
-        Ok(FieldType::String)
+    fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Self::Ok>
+    where
+        T: serde::Serialize,
+    {
+        value.serialize(self)
     }
 
     #[inline]

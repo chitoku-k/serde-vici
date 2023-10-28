@@ -181,6 +181,18 @@ where
 
     #[inline]
     fn serialize_none(self) -> Result<Self::Ok> {
+        match self.state {
+            State::None => {
+                return Err(io::Error::from(io::ErrorKind::InvalidData).into());
+            },
+            State::Key(_) | State::ListItem(_, None) => {
+                self.writer.write_all(&[0])?;
+            },
+            State::Value | State::ListItem(_, _) => {
+                self.writer.write_all(&[0, 0])?;
+            },
+        }
+
         Ok(())
     }
 
@@ -403,7 +415,7 @@ where
         };
 
         let element = match field {
-            FieldType::None => return Err(io::Error::from(io::ErrorKind::InvalidData).into()),
+            FieldType::None => return Ok(()),
             FieldType::List(ListElement::Section) => {
                 self.state = State::ListItem(ListElement::Section, None);
                 ElementType::SectionStart
@@ -441,6 +453,7 @@ where
         self.serialize_key(key)?;
 
         match self.state {
+            State::Key(FieldType::None) => return Ok(()),
             State::ListItem(_, _) => {},
             _ => {
                 self.state = State::Value;
@@ -529,7 +542,7 @@ mod tests {
         #[derive(Serialize)]
         struct MainSection {
             #[serde(rename = "sub-section")]
-            sub_section: SubSection,
+            sub_section: Option<SubSection>,
             list1: Vec<String>,
         }
 
@@ -541,9 +554,9 @@ mod tests {
         let data = RootSection {
             key1: "value1".to_string(),
             section1: MainSection {
-                sub_section: SubSection {
+                sub_section: Some(SubSection {
                     key2: "value2".to_string(),
-                },
+                }),
                 list1: vec!["item1".to_string(), "item2".to_string()],
             },
         };
@@ -579,6 +592,58 @@ mod tests {
     }
 
     #[test]
+    fn serialize_none() {
+        #[derive(Serialize)]
+        struct RootSection {
+            key1: String,
+            section1: MainSection,
+        }
+
+        #[derive(Serialize)]
+        struct MainSection {
+            #[serde(rename = "sub-section")]
+            sub_section: Option<SubSection>,
+            list1: Vec<String>,
+        }
+
+        #[derive(Serialize)]
+        struct SubSection {
+            key2: String,
+        }
+
+        let data = RootSection {
+            key1: "value1".to_string(),
+            section1: MainSection {
+                sub_section: None,
+                list1: vec!["item1".to_string(), "item2".to_string()],
+            },
+        };
+
+        let actual = to_vec(&data).unwrap();
+
+        #[rustfmt::skip]
+        assert_eq!(
+            actual,
+            vec![
+                // key1 = value1
+                3, 4, b'k', b'e', b'y', b'1', 0, 6, b'v', b'a', b'l', b'u', b'e', b'1',
+                // section1
+                1, 8, b's', b'e', b'c', b't', b'i', b'o', b'n', b'1',
+                // list1
+                4, 5, b'l', b'i', b's', b't', b'1',
+                // item1
+                5, 0, 5, b'i', b't', b'e', b'm', b'1',
+                // item2
+                5, 0, 5, b'i', b't', b'e', b'm', b'2',
+                // list1 end
+                6,
+                // section1 end
+                2,
+            ]
+        );
+    }
+
+    #[test]
     fn serialize_pools() {
         #[derive(Serialize)]
         struct Pool {
@@ -592,7 +657,7 @@ mod tests {
         #[derive(Serialize)]
         struct Lease {
             address: String,
-            identity: String,
+            identity: Option<String>,
             status: Status,
         }
 
@@ -613,22 +678,22 @@ mod tests {
                 leases: vec![
                     Lease {
                         address: "192.0.2.2".to_string(),
-                        identity: "identity-01".to_string(),
+                        identity: Some("identity-01".to_string()),
                         status: Status::Online,
                     },
                     Lease {
                         address: "192.0.2.3".to_string(),
-                        identity: "identity-02".to_string(),
+                        identity: Some("identity-02".to_string()),
                         status: Status::Online,
                     },
                     Lease {
                         address: "192.0.2.4".to_string(),
-                        identity: "identity-03".to_string(),
+                        identity: Some("identity-03".to_string()),
                         status: Status::Online,
                     },
                     Lease {
                         address: "192.0.2.5".to_string(),
-                        identity: "identity-04".to_string(),
+                        identity: None,
                         status: Status::Offline,
                     },
                 ],
@@ -687,8 +752,6 @@ mod tests {
                 1, 1, b'3',
                 // address = 192.0.2.5
                 3, 7, b'a', b'd', b'd', b'r', b'e', b's', b's', 0, 9, b'1', b'9', b'2', b'.', b'0', b'.', b'2', b'.', b'5',
-                // identity = identity-04
-                3, 8, b'i', b'd', b'e', b'n', b't', b'i', b't', b'y', 0, 11, b'i', b'd', b'e', b'n', b't', b'i', b't', b'y', b'-', b'0', b'4',
                 // status = offline
                 3, 6, b's', b't', b'a', b't', b'u', b's', 0, 7, b'o', b'f', b'f', b'l', b'i', b'n', b'e',
                 // 3 end

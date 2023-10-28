@@ -131,6 +131,19 @@ where
             State::None => Err(Error::io(io::Error::from(io::ErrorKind::InvalidData), Some(self.read.position()))),
         }
     }
+
+    #[inline]
+    fn peek(&mut self) -> Result<usize> {
+        match &self.state {
+            State::Key | State::SectionKey | State::ListName => {
+                self.read.peek_key()
+            },
+            State::Value | State::ListItem(_) => {
+                self.read.peek_value()
+            },
+            State::None => Err(Error::io(io::Error::from(io::ErrorKind::InvalidData), Some(self.read.position()))),
+        }
+    }
 }
 
 impl<R> Deserializer<IoRead<R>>
@@ -250,7 +263,17 @@ where
     where
         V: de::Visitor<'de>,
     {
-        visitor.visit_some(self)
+        if self.state == State::None {
+            return visitor.visit_some(self);
+        }
+
+        match self.peek()? {
+            0 => {
+                self.parse_str()?;
+                visitor.visit_none()
+            },
+            _ => visitor.visit_some(self),
+        }
     }
 
     #[inline]
@@ -479,7 +502,7 @@ mod tests {
         #[derive(Debug, Deserialize, Eq, PartialEq)]
         struct MainSection {
             #[serde(rename = "sub-section")]
-            sub_section: SubSection,
+            sub_section: Option<SubSection>,
             list1: Vec<String>,
         }
 
@@ -518,9 +541,60 @@ mod tests {
             RootSection {
                 key1: "value1".to_string(),
                 section1: MainSection {
-                    sub_section: SubSection {
+                    sub_section: Some(SubSection {
                         key2: "value2".to_string(),
-                    },
+                    }),
+                    list1: vec!["item1".to_string(), "item2".to_string()],
+                },
+            }
+        );
+    }
+
+    #[test]
+    fn deserialize_reader_none() {
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct RootSection {
+            key1: String,
+            section1: MainSection,
+        }
+
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct MainSection {
+            #[serde(rename = "sub-section")]
+            sub_section: Option<SubSection>,
+            list1: Vec<String>,
+        }
+
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct SubSection {
+            key2: String,
+        }
+
+        #[rustfmt::skip]
+        let data: &[_] = &[
+            // key1 = value1
+            3, 4, b'k', b'e', b'y', b'1', 0, 6, b'v', b'a', b'l', b'u', b'e', b'1',
+            // section1
+            1, 8, b's', b'e', b'c', b't', b'i', b'o', b'n', b'1',
+            // list1
+            4, 5, b'l', b'i', b's', b't', b'1',
+            // item1
+            5, 0, 5, b'i', b't', b'e', b'm', b'1',
+            // item2
+            5, 0, 5, b'i', b't', b'e', b'm', b'2',
+            // list1 end
+            6,
+            // section1 end
+            2,
+        ];
+
+        let actual: RootSection = from_reader(data).unwrap();
+        assert_eq!(
+            actual,
+            RootSection {
+                key1: "value1".to_string(),
+                section1: MainSection {
+                    sub_section: None,
                     list1: vec!["item1".to_string(), "item2".to_string()],
                 },
             }
@@ -541,7 +615,7 @@ mod tests {
         #[derive(Debug, Deserialize, Eq, PartialEq)]
         struct Lease {
             address: String,
-            identity: String,
+            identity: Option<String>,
             status: Status,
         }
 
@@ -601,8 +675,8 @@ mod tests {
             1, 1, b'3',
             // address = 192.0.2.5
             3, 7, b'a', b'd', b'd', b'r', b'e', b's', b's', 0, 9, b'1', b'9', b'2', b'.', b'0', b'.', b'2', b'.', b'5',
-            // identity = identity-04
-            3, 8, b'i', b'd', b'e', b'n', b't', b'i', b't', b'y', 0, 11, b'i', b'd', b'e', b'n', b't', b'i', b't', b'y', b'-', b'0', b'4',
+            // identity =
+            3, 8, b'i', b'd', b'e', b'n', b't', b'i', b't', b'y', 0, 0,
             // status = offline
             3, 6, b's', b't', b'a', b't', b'u', b's', 0, 7, b'o', b'f', b'f', b'l', b'i', b'n', b'e',
             // 3 end
@@ -625,22 +699,22 @@ mod tests {
                     leases: vec![
                         Lease {
                             address: "192.0.2.2".to_string(),
-                            identity: "identity-01".to_string(),
+                            identity: Some("identity-01".to_string()),
                             status: Status::Online,
                         },
                         Lease {
                             address: "192.0.2.3".to_string(),
-                            identity: "identity-02".to_string(),
+                            identity: Some("identity-02".to_string()),
                             status: Status::Online,
                         },
                         Lease {
                             address: "192.0.2.4".to_string(),
-                            identity: "identity-03".to_string(),
+                            identity: Some("identity-03".to_string()),
                             status: Status::Online,
                         },
                         Lease {
                             address: "192.0.2.5".to_string(),
-                            identity: "identity-04".to_string(),
+                            identity: None,
                             status: Status::Offline,
                         },
                     ],
@@ -660,7 +734,7 @@ mod tests {
         #[derive(Debug, Deserialize, Eq, PartialEq)]
         struct MainSection<'a> {
             #[serde(borrow, rename = "sub-section")]
-            sub_section: SubSection<'a>,
+            sub_section: Option<SubSection<'a>>,
             list1: Vec<&'a str>,
         }
 
@@ -699,7 +773,58 @@ mod tests {
             RootSection {
                 key1: "value1",
                 section1: MainSection {
-                    sub_section: SubSection { key2: "value2" },
+                    sub_section: Some(SubSection { key2: "value2" }),
+                    list1: vec!["item1", "item2",],
+                },
+            }
+        );
+    }
+
+    #[test]
+    fn deserialize_slice_none() {
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct RootSection<'a> {
+            key1: &'a str,
+            section1: MainSection<'a>,
+        }
+
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct MainSection<'a> {
+            #[serde(borrow, rename = "sub-section")]
+            sub_section: Option<SubSection<'a>>,
+            list1: Vec<&'a str>,
+        }
+
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct SubSection<'a> {
+            key2: &'a str,
+        }
+
+        #[rustfmt::skip]
+        let data = &[
+            // key1 = value1
+            3, 4, b'k', b'e', b'y', b'1', 0, 6, b'v', b'a', b'l', b'u', b'e', b'1',
+            // section1
+            1, 8, b's', b'e', b'c', b't', b'i', b'o', b'n', b'1',
+            // list1
+            4, 5, b'l', b'i', b's', b't', b'1',
+            // item1
+            5, 0, 5, b'i', b't', b'e', b'm', b'1',
+            // item2
+            5, 0, 5, b'i', b't', b'e', b'm', b'2',
+            // list1 end
+            6,
+            // section1 end
+            2,
+        ];
+
+        let actual: RootSection = from_slice(data).unwrap();
+        assert_eq!(
+            actual,
+            RootSection {
+                key1: "value1",
+                section1: MainSection {
+                    sub_section: None,
                     list1: vec!["item1", "item2",],
                 },
             }
@@ -721,7 +846,7 @@ mod tests {
         #[derive(Debug, Deserialize, Eq, PartialEq)]
         struct Lease<'a> {
             address: &'a str,
-            identity: &'a str,
+            identity: Option<&'a str>,
             status: Status,
         }
 
@@ -781,8 +906,8 @@ mod tests {
             1, 1, b'3',
             // address = 192.0.2.5
             3, 7, b'a', b'd', b'd', b'r', b'e', b's', b's', 0, 9, b'1', b'9', b'2', b'.', b'0', b'.', b'2', b'.', b'5',
-            // identity = identity-04
-            3, 8, b'i', b'd', b'e', b'n', b't', b'i', b't', b'y', 0, 11, b'i', b'd', b'e', b'n', b't', b'i', b't', b'y', b'-', b'0', b'4',
+            // identity =
+            3, 8, b'i', b'd', b'e', b'n', b't', b'i', b't', b'y', 0, 0,
             // status = offline
             3, 6, b's', b't', b'a', b't', b'u', b's', 0, 7, b'o', b'f', b'f', b'l', b'i', b'n', b'e',
             // 3 end
@@ -805,22 +930,22 @@ mod tests {
                     leases: vec![
                         Lease {
                             address: "192.0.2.2",
-                            identity: "identity-01",
+                            identity: Some("identity-01"),
                             status: Status::Online,
                         },
                         Lease {
                             address: "192.0.2.3",
-                            identity: "identity-02",
+                            identity: Some("identity-02"),
                             status: Status::Online,
                         },
                         Lease {
                             address: "192.0.2.4",
-                            identity: "identity-03",
+                            identity: Some("identity-03"),
                             status: Status::Online,
                         },
                         Lease {
                             address: "192.0.2.5",
-                            identity: "identity-04",
+                            identity: None,
                             status: Status::Offline,
                         },
                     ],

@@ -116,9 +116,9 @@ impl<'a> ser::Serializer for &'a mut FieldTypeSerializer {
     }
 
     #[inline]
-    fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Self::Ok>
+    fn serialize_some<T>(self, value: &T) -> Result<Self::Ok>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         value.serialize(self)
     }
@@ -139,12 +139,18 @@ impl<'a> ser::Serializer for &'a mut FieldTypeSerializer {
     }
 
     #[inline]
-    fn serialize_newtype_struct<T: ?Sized>(self, _: &'static str, _: &T) -> Result<Self::Ok> {
+    fn serialize_newtype_struct<T>(self, _: &'static str, _: &T) -> Result<Self::Ok>
+    where
+        T: ?Sized,
+    {
         Ok(FieldType::String)
     }
 
     #[inline]
-    fn serialize_newtype_variant<T: ?Sized>(self, _: &'static str, _: u32, _: &'static str, _: &T) -> Result<Self::Ok> {
+    fn serialize_newtype_variant<T>(self, _: &'static str, _: u32, _: &'static str, _: &T) -> Result<Self::Ok>
+    where
+        T: ?Sized,
+    {
         Ok(FieldType::String)
     }
 
@@ -184,7 +190,10 @@ impl<'a> ser::Serializer for &'a mut FieldTypeSerializer {
     }
 
     #[inline]
-    fn collect_str<T: ?Sized>(self, _: &T) -> Result<Self::Ok> {
+    fn collect_str<T>(self, _: &T) -> Result<Self::Ok>
+    where
+        T: ?Sized,
+    {
         Ok(FieldType::String)
     }
 }
@@ -194,9 +203,9 @@ impl<'a> ser::SerializeSeq for &'a mut FieldTypeSerializer {
     type Error = Error;
 
     #[inline]
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()>
+    fn serialize_element<T>(&mut self, value: &T) -> Result<()>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         self.item = Some(value.serialize(&mut **self)?);
         Ok(())
@@ -216,9 +225,9 @@ impl<'a> ser::SerializeTuple for &'a mut FieldTypeSerializer {
     type Error = Error;
 
     #[inline]
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()>
+    fn serialize_element<T>(&mut self, value: &T) -> Result<()>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         ser::SerializeSeq::serialize_element(self, value)
     }
@@ -234,9 +243,9 @@ impl<'a> ser::SerializeTupleStruct for &'a mut FieldTypeSerializer {
     type Error = Error;
 
     #[inline]
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<()>
+    fn serialize_field<T>(&mut self, value: &T) -> Result<()>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         ser::SerializeSeq::serialize_element(self, value)
     }
@@ -252,9 +261,9 @@ impl<'a> ser::SerializeTupleVariant for &'a mut FieldTypeSerializer {
     type Error = Error;
 
     #[inline]
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<()>
+    fn serialize_field<T>(&mut self, value: &T) -> Result<()>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         ser::SerializeSeq::serialize_element(self, value)
     }
@@ -270,12 +279,18 @@ impl<'a> ser::SerializeMap for &'a mut FieldTypeSerializer {
     type Error = Error;
 
     #[inline]
-    fn serialize_key<T: ?Sized>(&mut self, _: &T) -> Result<()> {
+    fn serialize_key<T>(&mut self, _: &T) -> Result<()>
+    where
+        T: ?Sized,
+    {
         Ok(())
     }
 
     #[inline]
-    fn serialize_value<T: ?Sized>(&mut self, _: &T) -> Result<()> {
+    fn serialize_value<T>(&mut self, _: &T) -> Result<()>
+    where
+        T: ?Sized,
+    {
         Ok(())
     }
 
@@ -290,7 +305,10 @@ impl<'a> ser::SerializeStruct for &'a mut FieldTypeSerializer {
     type Error = Error;
 
     #[inline]
-    fn serialize_field<T: ?Sized>(&mut self, _: &'static str, _: &T) -> Result<()> {
+    fn serialize_field<T>(&mut self, _: &'static str, _: &T) -> Result<()>
+    where
+        T: ?Sized,
+    {
         Ok(())
     }
 
@@ -305,7 +323,10 @@ impl<'a> ser::SerializeStructVariant for &'a mut FieldTypeSerializer {
     type Error = Error;
 
     #[inline]
-    fn serialize_field<T: ?Sized>(&mut self, _: &'static str, _: &T) -> Result<()> {
+    fn serialize_field<T>(&mut self, _: &'static str, _: &T) -> Result<()>
+    where
+        T: ?Sized,
+    {
         Ok(())
     }
 

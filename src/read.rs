@@ -107,7 +107,7 @@ where
 
     fn peek_key(&mut self) -> Result<usize, Error> {
         loop {
-            if let Some(size) = key_size(self.buf.get(0)) {
+            if let Some(size) = key_size(self.buf.front()) {
                 return Ok(size);
             }
 
@@ -118,7 +118,7 @@ where
 
     fn peek_value<'s>(&mut self) -> Result<usize, Error> {
         loop {
-            if let Some(size) = value_size(self.buf.get(0), self.buf.get(1)) {
+            if let Some(size) = value_size(self.buf.front(), self.buf.get(1)) {
                 return Ok(size);
             }
 
@@ -129,7 +129,7 @@ where
 
     fn parse_key<'s>(&mut self, scratch: &'s mut Vec<u8>) -> Result<Reference<'de, 's, str>, Error> {
         loop {
-            if let Some(size) = key_size(self.buf.get(0)) {
+            if let Some(size) = key_size(self.buf.front()) {
                 if size < self.buf.len() {
                     self.buf.drain(..1);
                     self.pos += 1;
@@ -152,7 +152,7 @@ where
 
     fn parse_value<'s>(&mut self, scratch: &'s mut Vec<u8>) -> Result<Reference<'de, 's, str>, Error> {
         loop {
-            if let Some(size) = value_size(self.buf.get(0), self.buf.get(1)) {
+            if let Some(size) = value_size(self.buf.front(), self.buf.get(1)) {
                 if size < self.buf.len() - 1 {
                     self.buf.drain(..2);
                     self.pos += 2;

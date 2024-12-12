@@ -115,7 +115,7 @@ macro_rules! serialize_float {
     };
 }
 
-impl<'a, 'se, W> ser::Serializer for &'a mut Serializer<'se, W>
+impl<W> ser::Serializer for &mut Serializer<'_, W>
 where
     W: io::Write,
 {
@@ -273,7 +273,7 @@ where
 }
 
 #[doc(hidden)]
-impl<'a, 'se, W> ser::SerializeSeq for &'a mut Serializer<'se, W>
+impl<W> ser::SerializeSeq for &mut Serializer<'_, W>
 where
     W: io::Write,
 {
@@ -331,7 +331,7 @@ where
 }
 
 #[doc(hidden)]
-impl<'a, 'se, W> ser::SerializeTuple for &'a mut Serializer<'se, W>
+impl<W> ser::SerializeTuple for &mut Serializer<'_, W>
 where
     W: io::Write,
 {
@@ -353,7 +353,7 @@ where
 }
 
 #[doc(hidden)]
-impl<'a, 'se, W> ser::SerializeTupleStruct for &'a mut Serializer<'se, W>
+impl<W> ser::SerializeTupleStruct for &mut Serializer<'_, W>
 where
     W: io::Write,
 {
@@ -375,7 +375,7 @@ where
 }
 
 #[doc(hidden)]
-impl<'a, 'se, W> ser::SerializeTupleVariant for &'a mut Serializer<'se, W>
+impl<W> ser::SerializeTupleVariant for &mut Serializer<'_, W>
 where
     W: io::Write,
 {
@@ -397,7 +397,7 @@ where
 }
 
 #[doc(hidden)]
-impl<'a, 'se, W> ser::SerializeMap for &'a mut Serializer<'se, W>
+impl<W> ser::SerializeMap for &mut Serializer<'_, W>
 where
     W: io::Write,
 {
@@ -480,7 +480,7 @@ where
 }
 
 #[doc(hidden)]
-impl<'a, 'se, W> ser::SerializeStruct for &'a mut Serializer<'se, W>
+impl<W> ser::SerializeStruct for &mut Serializer<'_, W>
 where
     W: io::Write,
 {
@@ -502,7 +502,7 @@ where
 }
 
 #[doc(hidden)]
-impl<'a, 'se, W> ser::SerializeStructVariant for &'a mut Serializer<'se, W>
+impl<W> ser::SerializeStructVariant for &mut Serializer<'_, W>
 where
     W: io::Write,
 {

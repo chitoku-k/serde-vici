@@ -28,7 +28,7 @@ struct FieldTypeSerializer {
     item: Option<FieldType>,
 }
 
-impl<'a> ser::Serializer for &'a mut FieldTypeSerializer {
+impl ser::Serializer for &mut FieldTypeSerializer {
     type Ok = FieldType;
     type Error = Error;
 
@@ -198,7 +198,7 @@ impl<'a> ser::Serializer for &'a mut FieldTypeSerializer {
     }
 }
 
-impl<'a> ser::SerializeSeq for &'a mut FieldTypeSerializer {
+impl ser::SerializeSeq for &mut FieldTypeSerializer {
     type Ok = FieldType;
     type Error = Error;
 
@@ -220,7 +220,7 @@ impl<'a> ser::SerializeSeq for &'a mut FieldTypeSerializer {
     }
 }
 
-impl<'a> ser::SerializeTuple for &'a mut FieldTypeSerializer {
+impl ser::SerializeTuple for &mut FieldTypeSerializer {
     type Ok = FieldType;
     type Error = Error;
 
@@ -238,7 +238,7 @@ impl<'a> ser::SerializeTuple for &'a mut FieldTypeSerializer {
     }
 }
 
-impl<'a> ser::SerializeTupleStruct for &'a mut FieldTypeSerializer {
+impl ser::SerializeTupleStruct for &mut FieldTypeSerializer {
     type Ok = FieldType;
     type Error = Error;
 
@@ -256,7 +256,7 @@ impl<'a> ser::SerializeTupleStruct for &'a mut FieldTypeSerializer {
     }
 }
 
-impl<'a> ser::SerializeTupleVariant for &'a mut FieldTypeSerializer {
+impl ser::SerializeTupleVariant for &mut FieldTypeSerializer {
     type Ok = FieldType;
     type Error = Error;
 
@@ -274,7 +274,7 @@ impl<'a> ser::SerializeTupleVariant for &'a mut FieldTypeSerializer {
     }
 }
 
-impl<'a> ser::SerializeMap for &'a mut FieldTypeSerializer {
+impl ser::SerializeMap for &mut FieldTypeSerializer {
     type Ok = FieldType;
     type Error = Error;
 
@@ -300,7 +300,7 @@ impl<'a> ser::SerializeMap for &'a mut FieldTypeSerializer {
     }
 }
 
-impl<'a> ser::SerializeStruct for &'a mut FieldTypeSerializer {
+impl ser::SerializeStruct for &mut FieldTypeSerializer {
     type Ok = FieldType;
     type Error = Error;
 
@@ -318,7 +318,7 @@ impl<'a> ser::SerializeStruct for &'a mut FieldTypeSerializer {
     }
 }
 
-impl<'a> ser::SerializeStructVariant for &'a mut FieldTypeSerializer {
+impl ser::SerializeStructVariant for &mut FieldTypeSerializer {
     type Ok = FieldType;
     type Error = Error;
 

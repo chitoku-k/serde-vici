@@ -22,7 +22,7 @@ where
     Copied(&'c T),
 }
 
-impl<'b, 'c, T> Deref for Reference<'b, 'c, T>
+impl<T> Deref for Reference<'_, '_, T>
 where
     T: ?Sized + 'static,
 {

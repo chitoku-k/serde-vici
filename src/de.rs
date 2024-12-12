@@ -177,7 +177,7 @@ macro_rules! deserialize_number {
     };
 }
 
-impl<'de, 'a, R> de::Deserializer<'de> for &'a mut Deserializer<R>
+impl<'de, R> de::Deserializer<'de> for &mut Deserializer<R>
 where
     R: Read<'de>,
 {
@@ -372,7 +372,7 @@ where
 }
 
 #[doc(hidden)]
-impl<'de, 'a, R> de::SeqAccess<'de> for &'a mut Deserializer<R>
+impl<'de, R> de::SeqAccess<'de> for &mut Deserializer<R>
 where
     R: Read<'de>,
 {
@@ -422,7 +422,7 @@ where
 }
 
 #[doc(hidden)]
-impl<'de, 'a, R> de::MapAccess<'de> for &'a mut Deserializer<R>
+impl<'de, R> de::MapAccess<'de> for &mut Deserializer<R>
 where
     R: Read<'de>,
 {

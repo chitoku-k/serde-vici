@@ -1,5 +1,6 @@
 //! Deserialize VICI data to a Rust data structure.
 
+use core::result::Result::Ok;
 use std::{io, str};
 
 use serde::de::{self, IntoDeserializer};
@@ -133,6 +134,17 @@ where
     }
 
     #[inline]
+    fn parse_raw_value(&mut self) -> Result<Reference<'de, '_, [u8]>> {
+        match &self.state {
+            State::Value => {
+                self.scratch.clear();
+                self.read.parse_value_raw(&mut self.scratch)
+            },
+            _ => Err(Error::io(io::Error::from(io::ErrorKind::InvalidData), Some(self.read.position())))
+        }
+    }
+
+    #[inline]
     fn peek(&mut self) -> Result<usize> {
         match &self.state {
             State::Key | State::SectionKey | State::ListName => {
@@ -189,7 +201,8 @@ where
         V: de::Visitor<'de>,
     {
         match &self.state {
-            State::Key | State::Value | State::SectionKey | State::ListName => self.deserialize_str(visitor),
+            State::Value => self.deserialize_byte_buf(visitor),
+            State::Key | State::SectionKey | State::ListName => self.deserialize_str(visitor),
             State::ListItem(ListElement::String) => self.deserialize_seq(visitor),
             State::ListItem(ListElement::Section) | State::None => self.deserialize_map(visitor),
         }
@@ -244,9 +257,9 @@ where
     where
         V: de::Visitor<'de>,
     {
-        match self.parse_str()? {
-            Reference::Borrowed(s) => visitor.visit_borrowed_bytes(s.as_bytes()),
-            Reference::Copied(s) => visitor.visit_bytes(s.as_bytes()),
+        match self.parse_raw_value()? {
+            Reference::Borrowed(s) => visitor.visit_borrowed_bytes(s),
+            Reference::Copied(s) => visitor.visit_bytes(s),
         }
     }
 
@@ -404,7 +417,7 @@ where
                 self.level = Some(self.level.map_or(1, |l| l + 1));
 
                 self.state = State::SectionKey;
-                let _index = self.parse_str()?;
+                self.parse_str()?;
 
                 self.state = State::ListItem(ListElement::Section);
                 let value = seed.deserialize(&mut **self).map(Some)?;

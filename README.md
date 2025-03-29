@@ -111,9 +111,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct CertResponse {
-    #[serde(rename = "type")]
-    tpe: String,
-    flat: String,
+    r#type: String,
+    flag: String,
     has_privkey: bool,
 
     #[serde(with = "serde_bytes")]

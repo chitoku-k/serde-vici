@@ -1,6 +1,5 @@
 //! Deserialize VICI data to a Rust data structure.
 
-use core::result::Result::Ok;
 use std::{io, str};
 
 use serde::de::{self, IntoDeserializer};
@@ -136,7 +135,7 @@ where
     #[inline]
     fn parse_raw_value(&mut self) -> Result<Reference<'de, '_, [u8]>> {
         match &self.state {
-            State::Value => {
+            State::Value | State::ListItem(_) => {
                 self.scratch.clear();
                 self.read.parse_value_raw(&mut self.scratch)
             },
@@ -201,8 +200,8 @@ where
         V: de::Visitor<'de>,
     {
         match &self.state {
-            State::Value => self.deserialize_byte_buf(visitor),
             State::Key | State::SectionKey | State::ListName => self.deserialize_str(visitor),
+            State::Value => self.deserialize_byte_buf(visitor),
             State::ListItem(ListElement::String) => self.deserialize_seq(visitor),
             State::ListItem(ListElement::Section) | State::None => self.deserialize_map(visitor),
         }
@@ -417,7 +416,7 @@ where
                 self.level = Some(self.level.map_or(1, |l| l + 1));
 
                 self.state = State::SectionKey;
-                self.parse_str()?;
+                let _index = self.parse_str()?;
 
                 self.state = State::ListItem(ListElement::Section);
                 let value = seed.deserialize(&mut **self).map(Some)?;
@@ -737,6 +736,57 @@ mod tests {
     }
 
     #[test]
+    fn deserialize_reader_certs() {
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        enum Type {
+            X509,
+            #[serde(rename = "X509_AC")]
+            X509Ac,
+            #[serde(rename = "X509_CRL")]
+            X509Crl,
+            #[serde(rename = "OCSP_RESPONSE")]
+            OcspResponse,
+            PUBKEY,
+        }
+
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        enum Flag {
+            NONE,
+            CA,
+            AA,
+            OCSP
+        }
+
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct CertResponse {
+            r#type: Type,
+            flag: Flag,
+            #[serde(with = "serde_bytes")]
+            data: Vec<u8>,
+        }
+
+        #[rustfmt::skip]
+        let data: &[_] = &[
+            // type = X509
+            3, 4, b't', b'y', b'p', b'e', 0, 4, b'X', b'5', b'0', b'9',
+            // flag = CA
+            3, 4, b'f', b'l', b'a', b'g', 0, 2, b'C', b'A',
+            // data = 0x00 0x01 0x02 0x03
+            3, 4, b'd', b'a', b't', b'a', 0, 4, 0x00, 0x01, 0x02, 0x03,
+        ];
+
+        let actual: CertResponse = from_reader(data).unwrap();
+        assert_eq!(
+            actual,
+            CertResponse {
+                r#type: Type::X509,
+                flag: Flag::CA,
+                data: vec![0x00, 0x01, 0x02, 0x03],
+            }
+        );
+    }
+
+    #[test]
     fn deserialize_slice_example() {
         #[derive(Debug, Deserialize, Eq, PartialEq)]
         struct RootSection<'a> {
@@ -963,6 +1013,57 @@ mod tests {
                         },
                     ],
                 },
+            }
+        );
+    }
+
+    #[test]
+    fn deserialize_slice_certs() {
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        enum Type {
+            X509,
+            #[serde(rename = "X509_AC")]
+            X509Ac,
+            #[serde(rename = "X509_CRL")]
+            X509Crl,
+            #[serde(rename = "OCSP_RESPONSE")]
+            OcspResponse,
+            PUBKEY,
+        }
+
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        enum Flag {
+            NONE,
+            CA,
+            AA,
+            OCSP
+        }
+
+        #[derive(Debug, Deserialize, Eq, PartialEq)]
+        struct CertResponse {
+            r#type: Type,
+            flag: Flag,
+            #[serde(with = "serde_bytes")]
+            data: Vec<u8>,
+        }
+
+        #[rustfmt::skip]
+        let data = &[
+            // type = X509
+            3, 4, b't', b'y', b'p', b'e', 0, 4, b'X', b'5', b'0', b'9',
+            // flag = CA
+            3, 4, b'f', b'l', b'a', b'g', 0, 2, b'C', b'A',
+            // data = 0x00 0x01 0x02 0x03
+            3, 4, b'd', b'a', b't', b'a', 0, 4, 0x00, 0x01, 0x02, 0x03,
+        ];
+
+        let actual: CertResponse = from_slice(data).unwrap();
+        assert_eq!(
+            actual,
+            CertResponse {
+                r#type: Type::X509,
+                flag: Flag::CA,
+                data: vec![0x00, 0x01, 0x02, 0x03],
             }
         );
     }

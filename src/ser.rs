@@ -763,4 +763,58 @@ mod tests {
             ]
         );
     }
+
+    #[test]
+    fn serialize_certs() {
+        #[allow(dead_code)]
+        #[derive(Serialize)]
+        enum Type {
+            X509,
+            #[serde(rename = "X509_AC")]
+            X509Ac,
+            #[serde(rename = "X509_CRL")]
+            X509Crl,
+            #[serde(rename = "OCSP_RESPONSE")]
+            OcspResponse,
+            PUBKEY,
+        }
+
+        #[allow(dead_code)]
+        #[derive(Serialize)]
+        enum Flag {
+            NONE,
+            CA,
+            AA,
+            OCSP
+        }
+
+        #[derive(Serialize)]
+        struct CertResponse {
+            r#type: Type,
+            flag: Flag,
+            #[serde(with = "serde_bytes")]
+            data: Vec<u8>,
+        }
+
+        let data = CertResponse {
+            r#type: Type::X509,
+            flag: Flag::CA,
+            data: vec![0x00, 0x01, 0x02, 0x03],
+        };
+
+        let actual = to_vec(&data).unwrap();
+
+        #[rustfmt::skip]
+        assert_eq!(
+            actual,
+            vec![
+                // type = X509
+                3, 4, b't', b'y', b'p', b'e', 0, 4, b'X', b'5', b'0', b'9',
+                // flag = CA
+                3, 4, b'f', b'l', b'a', b'g', 0, 2, b'C', b'A',
+                // data = 0x00 0x01 0x02 0x03
+                3, 4, b'd', b'a', b't', b'a', 0, 4, 0x00, 0x01, 0x02, 0x03,
+            ]
+        );
+    }
 }

@@ -746,15 +746,18 @@ mod tests {
             X509Crl,
             #[serde(rename = "OCSP_RESPONSE")]
             OcspResponse,
-            PUBKEY,
+            #[serde(rename = "PUBKEY")]
+            Pubkey,
         }
 
         #[derive(Debug, Deserialize, Eq, PartialEq)]
         enum Flag {
-            NONE,
+            #[serde(rename = "NONE")]
+            None,
             CA,
             AA,
-            OCSP
+            #[serde(rename = "OCSP")]
+            Ocsp
         }
 
         #[derive(Debug, Deserialize, Eq, PartialEq)]
@@ -1028,15 +1031,18 @@ mod tests {
             X509Crl,
             #[serde(rename = "OCSP_RESPONSE")]
             OcspResponse,
-            PUBKEY,
+            #[serde(rename = "PUBKEY")]
+            Pubkey,
         }
 
         #[derive(Debug, Deserialize, Eq, PartialEq)]
         enum Flag {
-            NONE,
+            #[serde(rename = "NONE")]
+            None,
             CA,
             AA,
-            OCSP
+            #[serde(rename = "OCSP")]
+            Ocsp
         }
 
         #[derive(Debug, Deserialize, Eq, PartialEq)]

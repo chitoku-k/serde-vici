@@ -776,16 +776,19 @@ mod tests {
             X509Crl,
             #[serde(rename = "OCSP_RESPONSE")]
             OcspResponse,
-            PUBKEY,
+            #[serde(rename = "PUBKEY")]
+            Pubkey,
         }
 
         #[allow(dead_code)]
         #[derive(Serialize)]
         enum Flag {
-            NONE,
+            #[serde(rename = "NONE")]
+            None,
             CA,
             AA,
-            OCSP
+            #[serde(rename = "OCSP")]
+            Ocsp
         }
 
         #[derive(Serialize)]

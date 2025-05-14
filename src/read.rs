@@ -11,6 +11,7 @@ pub trait Read<'de> {
     fn peek_value(&mut self) -> Result<usize, Error>;
     fn parse_key<'s>(&mut self, scratch: &'s mut Vec<u8>) -> Result<Reference<'de, 's, str>, Error>;
     fn parse_value<'s>(&mut self, scratch: &'s mut Vec<u8>) -> Result<Reference<'de, 's, str>, Error>;
+    fn parse_value_raw<'s>(&mut self, scratch: &'s mut Vec<u8>) -> Result<Reference<'de, 's, [u8]>, Error>;
     fn parse_element_type(&mut self) -> Result<ElementType, Error>;
 }
 
@@ -173,6 +174,29 @@ where
         }
     }
 
+    fn parse_value_raw<'s>(&mut self, scratch: &'s mut Vec<u8>) -> Result<Reference<'de, 's, [u8]>, Error> {
+        loop {
+            if let Some(size) = value_size(self.buf.front(), self.buf.get(1)) {
+                if size < self.buf.len() - 1 {
+                    self.buf.drain(..2);
+                    self.pos += 2;
+
+                    for v in self.buf.drain(..size) {
+                        scratch.push(v);
+                    }
+
+                    let value: &[u8] = scratch.as_slice();
+                    self.pos += size;
+
+                    return Ok(Reference::Copied(value));
+                }
+            }
+
+            self.fill_buf()?
+                .ok_or_else(|| Error::data(ErrorCode::EofWhileParsingValue, None, Some(self.pos)))?;
+        }
+    }
+
     fn parse_element_type(&mut self) -> Result<ElementType, Error> {
         loop {
             if let Some(result) = self.buf.pop_front().map(ElementType::try_from) {
@@ -260,6 +284,18 @@ impl<'a> Read<'a> for SliceRead<'a> {
                 self.pos += size;
 
                 return Ok(Reference::Borrowed(key));
+            }
+        }
+
+        Err(Error::data(ErrorCode::EofWhileParsingValue, None, Some(self.pos)))
+    }
+
+    fn parse_value_raw<'s>(&mut self, _scratch: &'s mut Vec<u8>) -> Result<Reference<'a, 's, [u8]>, Error> {
+        if let Some(size) = value_size(self.slice.get(self.pos), self.slice.get(self.pos + 1)) {
+            if let Some(s) = self.slice.get((self.pos + 2)..(self.pos + 2 + size)) {
+                self.pos += 2 + size;
+
+                return Ok(Reference::Borrowed(s));
             }
         }
 

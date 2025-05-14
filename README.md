@@ -19,6 +19,15 @@ serde = { version = "1.0", features = ["derive"] }
 serde_vici = "0.1"
 ```
 
+If you want to handle raw binary data in VICI, such as in `list-certs` command, consider using [serde_bytes][].
+
+```toml
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_vici = "0.1"
+serde_bytes = "0.11"
+```
+
 ## Using Serde VICI
 
 For example, serializing/deserializing the [Encoding Example][] looks like the
@@ -92,6 +101,29 @@ fn main() -> Result<(), serde_vici::Error> {
 }
 ```
 
+## Using Serde VICI With Raw Bytes
+
+For example, deserializing raw bytes into `Vec<u8>`, which otherwise will be treated as sequence.
+
+```rust
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct CertResponse {
+    r#type: String,
+    flag: String,
+    has_privkey: bool,
+
+    #[serde(with = "serde_bytes")]
+    data: Vec<u8>,
+    
+    subject: String,
+    not_before: String,
+    not_after: String,
+}
+```
+
 [workflow-link]:    https://github.com/chitoku-k/serde-vici/actions?query=branch:master
 [workflow-badge]:   https://img.shields.io/github/actions/workflow/status/chitoku-k/serde-vici/ci.yml?branch=master&style=flat-square&logo=github
 [docsrs-link]:      https://docs.rs/serde_vici/
@@ -100,4 +132,5 @@ fn main() -> Result<(), serde_vici::Error> {
 [cratesio-badge]:   https://img.shields.io/crates/v/serde_vici?style=flat-square
 [Serde]:            https://github.com/serde-rs/serde
 [VICI]:             https://github.com/strongswan/strongswan/blob/5.9.5/src/libcharon/plugins/vici/README.md
+[serde_bytes]:      https://github.com/serde-rs/bytes
 [Encoding Example]: https://github.com/strongswan/strongswan/blob/5.9.5/src/libcharon/plugins/vici/README.md#encoding-example

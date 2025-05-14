@@ -788,7 +788,7 @@ mod tests {
             CA,
             AA,
             #[serde(rename = "OCSP")]
-            Ocsp
+            Ocsp,
         }
 
         #[derive(Serialize)]

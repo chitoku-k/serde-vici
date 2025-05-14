@@ -139,19 +139,15 @@ where
                 self.scratch.clear();
                 self.read.parse_value_raw(&mut self.scratch)
             },
-            _ => Err(Error::io(io::Error::from(io::ErrorKind::InvalidData), Some(self.read.position())))
+            _ => Err(Error::io(io::Error::from(io::ErrorKind::InvalidData), Some(self.read.position()))),
         }
     }
 
     #[inline]
     fn peek(&mut self) -> Result<usize> {
         match &self.state {
-            State::Key | State::SectionKey | State::ListName => {
-                self.read.peek_key()
-            },
-            State::Value | State::ListItem(_) => {
-                self.read.peek_value()
-            },
+            State::Key | State::SectionKey | State::ListName => self.read.peek_key(),
+            State::Value | State::ListItem(_) => self.read.peek_value(),
             State::None => Err(Error::io(io::Error::from(io::ErrorKind::InvalidData), Some(self.read.position()))),
         }
     }
@@ -757,7 +753,7 @@ mod tests {
             CA,
             AA,
             #[serde(rename = "OCSP")]
-            Ocsp
+            Ocsp,
         }
 
         #[derive(Debug, Deserialize, Eq, PartialEq)]
@@ -1042,7 +1038,7 @@ mod tests {
             CA,
             AA,
             #[serde(rename = "OCSP")]
-            Ocsp
+            Ocsp,
         }
 
         #[derive(Debug, Deserialize, Eq, PartialEq)]

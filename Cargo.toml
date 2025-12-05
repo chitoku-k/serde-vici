@@ -26,7 +26,7 @@ version = "1.0"
 version = "1.0.117"
 
 [dev-dependencies.anyhow]
-version = "1.0"
+version = "1.0.100"
 
 [dev-dependencies.indexmap]
 version = "1.8"

@@ -6,6 +6,7 @@
   "labels": ["dependencies"],
   "prConcurrentLimit": 0,
   "prHourlyLimit": 0,
+  "rangeStrategy": "replace",
   "packageRules": [
     {
       "matchManagers": ["github-actions"],

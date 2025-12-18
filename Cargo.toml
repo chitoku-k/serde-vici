@@ -1,6 +1,6 @@
 [package]
 name = "serde_vici"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Chitoku <odango@chitoku.jp>"]
 license = "MIT"
 description = "Serde serialization/deserialization library for the VICI protocol"

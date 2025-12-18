@@ -1,0 +1,31 @@
+name: Release
+on:
+  release:
+    types:
+      - published
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  docs:
+    name: Docs
+    uses: ./.github/workflows/docs.yml
+
+  lint:
+    name: Lint
+    uses: ./.github/workflows/lint.yml
+
+  test:
+    name: Test
+    uses: ./.github/workflows/test.yml
+
+  publish:
+    name: Publish
+    needs:
+      - docs
+      - lint
+      - test
+    uses: ./.github/workflows/publish.yml
+    secrets: inherit

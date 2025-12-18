@@ -7,6 +7,27 @@
   "prConcurrentLimit": 0,
   "prHourlyLimit": 0,
   "rangeStrategy": "replace",
+  "customManagers": [
+    {
+      "customType": "jsonata",
+      "fileFormat": "yaml",
+      "managerFilePatterns": [".github/workflows/*.yml"],
+      "matchStrings": [
+        "jobs.*.strategy.matrix.platform[label].{\"depName\": $substringBefore(label, \"-\"), \"currentValue\": $substringAfter(label, \"-\")}",
+        "jobs.*.strategy.matrix.exclude.platform[label].{\"depName\": $substringBefore(label, \"-\"), \"currentValue\": $substringAfter(label, \"-\")}",
+        "jobs.*.strategy.matrix.include.platform[label].{\"depName\": $substringBefore(label, \"-\"), \"currentValue\": $substringAfter(label, \"-\")}"
+      ],
+      "datasourceTemplate": "github-runners"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/(^|/)rust-toolchain\\.toml$/"],
+      "matchStrings": ["channel\\s*=\\s*\"(?<currentValue>\\d+\\.\\d+(\\.\\d+)?)\""],
+      "depNameTemplate": "rust",
+      "lookupNameTemplate": "rust-lang/rust",
+      "datasourceTemplate": "github-tags"
+    }
+  ],
   "packageRules": [
     {
       "matchManagers": ["github-actions"],
